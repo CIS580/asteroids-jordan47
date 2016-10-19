@@ -2,6 +2,10 @@
 
 const MS_PER_FRAME = 1000/8;
 
+const Laser = require('./laser.js');
+const Asteroid = require('./asteroid.js');
+const App = require('./app.js');
+
 /**
  * @module exports the Player class
  */
@@ -29,6 +33,11 @@ function Player(position, canvas) {
   this.thrusting = false;
   this.steerLeft = false;
   this.steerRight = false;
+  this.shooting = false;
+  this.lasers = [];
+  this.level = 1;
+  this.score = 0;
+  this.lives = 3;
 
   var self = this;
   window.onkeydown = function(event) {
@@ -44,6 +53,9 @@ function Player(position, canvas) {
       case 'ArrowRight': // right
       case 'd':
         self.steerRight = true;
+        break;
+      case 'i':
+        self.shooting = true;
         break;
     }
   }
@@ -62,17 +74,45 @@ function Player(position, canvas) {
       case 'd':
         self.steerRight = false;
         break;
+      case 'i':
+        self.shooting = false;
+        break;
     }
   }
 }
 
-
+function checkCollisions(astArr, canvas)
+{
+  astArr.forEach(function(asteroid)
+  {
+    if(self.position.x < asteroid.position.x + asteroid.radius &&
+   self.position.x + 10 > asteroid.position.x &&
+   self.position.y < asteroid.position.y + asteroid.radius &&
+   10 + self.position.y > asteroid.position.y)
+   {
+     player = new Player({x: canvas.width/2, y: canvas.height/2}, canvas);
+     var asteroids = [];
+     for(var i = 0; i < (10 + 5 * self.level); i++)
+     {
+       asteroids[i] = new Asteroid({x: canvas.width/2, y: canvas.height/2}, canvas);
+     }
+   }
+ });
+}
 
 /**
  * @function updates the player object
  * {DOMHighResTimeStamp} time the elapsed time since the last frame
  */
-Player.prototype.update = function(time) {
+Player.prototype.update = function(time, canvas) {
+  if(typeof astArr != "undefined") checkCollisions(App.asteroids, canvas);
+  if(this.shooting) this.lasers.push(new Laser(this.position, this.angle));
+  if(this.lasers.length > 64) this.lasers.shift();
+  console.log(this.lasers.length);
+  this.lasers.forEach(function(laser)
+  {
+    laser.update(time);
+  });
   // Apply angular velocity
   if(this.steerLeft) {
     this.angle += time * 0.005;
@@ -90,8 +130,8 @@ Player.prototype.update = function(time) {
     this.velocity.y -= acceleration.y;
   }
   // Apply velocity
-  this.position.x += this.velocity.x;
-  this.position.y += this.velocity.y;
+  this.position.x += this.velocity.x/15;
+  this.position.y += this.velocity.y/15;
   // Wrap around the screen
   if(this.position.x < 0) this.position.x += this.worldWidth;
   if(this.position.x > this.worldWidth) this.position.x -= this.worldWidth;
@@ -129,5 +169,11 @@ Player.prototype.render = function(time, ctx) {
     ctx.strokeStyle = 'orange';
     ctx.stroke();
   }
+
   ctx.restore();
+  // Draw the lasers
+  this.lasers.forEach(function(laser)
+  {
+    laser.render(time, ctx);
+  });
 }
